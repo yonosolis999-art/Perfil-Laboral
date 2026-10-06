@@ -1,0 +1,41 @@
+name: Auditoría de Seguridad y Código
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Ejecutar análisis automático cada lunes a las 00:00 UTC
+    - cron: '0 0 * * 1'
+
+jobs:
+  audit:
+    name: Análisis de Vulnerabilidades y HTML/JS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Analiza que no haya claves privadas o secretos expuestos en el código
+      - name: Escaneo de Secretos y Credenciales Expuestas (Trufflehog)
+        uses: trufflesecurity/trufflehog-action@main
+        with:
+          extra_args: --only-verified
+
+      # Verifica el estado de seguridad y sintaxis del código
+      - name: Análisis de Seguridad Estática (CodeQL / Super-Linter)
+        uses: super-linter/super-linter/slim@v5
+        env:
+          VALIDATE_ALL_CODEBASE: true
+          DEFAULT_BRANCH: main
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_HTML: true
+          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_CSS: true
